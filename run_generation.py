@@ -34,7 +34,7 @@ from transformers import XLNetLMHeadModel, XLNetTokenizer
 from transformers import TransfoXLLMHeadModel, TransfoXLTokenizer
 from transformers import CTRLLMHeadModel, CTRLTokenizer
 from transformers import XLMWithLMHeadModel, XLMTokenizer
-
+import ipdb
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
@@ -114,27 +114,7 @@ def sample_sequence(model, length, context, num_samples=1, temperature=1, top_k=
     generated = context
     with torch.no_grad():
         for _ in trange(length):
-
             inputs = {'input_ids': generated}
-            if is_xlnet: 
-                # XLNet is a direct (predict same token, not next token) and bi-directional model by default
-                # => need one additional dummy token in the input (will be masked), attention mask and target mapping (see model docstring)
-                input_ids = torch.cat((generated, torch.zeros((1, 1), dtype=torch.long, device=device)), dim=1)
-                perm_mask = torch.zeros((1, input_ids.shape[1], input_ids.shape[1]), dtype=torch.float, device=device)
-                perm_mask[:, :, -1] = 1.0  # Previous tokens don't see last token
-                target_mapping = torch.zeros((1, 1, input_ids.shape[1]), dtype=torch.float, device=device)
-                target_mapping[0, 0, -1] = 1.0  # predict last token
-                inputs = {'input_ids': input_ids, 'perm_mask': perm_mask, 'target_mapping': target_mapping}
-
-            if is_xlm_mlm and xlm_mask_token:
-                # XLM MLM models are direct models (predict same token, not next token)
-                # => need one additional dummy token in the input (will be masked and guessed)
-                input_ids = torch.cat((generated, torch.full((1, 1), xlm_mask_token, dtype=torch.long, device=device)), dim=1)
-                inputs = {'input_ids': input_ids}
-
-            if xlm_lang is not None:
-                inputs["langs"] = torch.tensor([xlm_lang] * inputs["input_ids"].shape[1], device=device).view(1, -1)
-
             outputs = model(**inputs)  # Note: we could also use 'past' with GPT-2/Transfo-XL/XLNet/CTRL (cached hidden-states)
             next_token_logits = outputs[0][:, -1, :] / (temperature if temperature > 0 else 1.)
 
