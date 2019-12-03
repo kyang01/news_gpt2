@@ -1,9 +1,0 @@
-matplotlib
-numpy
-pyyaml
-torch
-tqdm
-regex
-transformers
-ipdb
-scikit-learn

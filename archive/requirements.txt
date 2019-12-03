@@ -1,0 +1,12 @@
+matplotlib
+numpy
+pyyaml
+torch
+tqdm
+regex
+transformers
+ipdb
+scikit-learn
+tensorboardX
+# apex -- https://github.com/NVIDIA/apex/issues/116
+# nvidia drivers -- https://cloud.google.com/compute/docs/gpus/install-drivers-gpu
