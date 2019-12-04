@@ -98,7 +98,7 @@ def sample_sequence(model, length, context, num_samples=1, temperature=1, top_k=
     context = context.unsqueeze(0).repeat(num_samples, 1)
     generated = context
     with torch.no_grad():
-        for _ in trange(length):
+        for _ in range(length):
             inputs = {'input_ids': generated}
             outputs = model(**inputs)  # Note: we could also use 'past' with GPT-2/Transfo-XL/XLNet/CTRL (cached hidden-states)
             next_token_logits = outputs[0][:, -1, :] / (temperature if temperature > 0 else 1.)
@@ -168,32 +168,11 @@ def main():
 
     while True:
         xlm_lang = None
-        # XLM Language usage detailed in the issues #1414
-        if args.model_type in ["xlm"] and hasattr(tokenizer, 'lang2id') and hasattr(model.config, 'use_lang_emb') \
-                and model.config.use_lang_emb:
-            if args.xlm_lang:
-                language = args.xlm_lang
-            else:
-                language = None
-                while language not in tokenizer.lang2id.keys():
-                    language = input("Using XLM. Select language in " + str(list(tokenizer.lang2id.keys())) + " >>> ")
-            xlm_lang = tokenizer.lang2id[language]
-
-        # XLM masked-language modeling (MLM) models need masked token (see details in sample_sequence)
-        is_xlm_mlm = args.model_type in ["xlm"] and 'mlm' in args.model_name_or_path
-        if is_xlm_mlm:
-            xlm_mask_token = tokenizer.mask_token_id
-        else:
-            xlm_mask_token = None
+        xlm_mask_token = None
+        is_xlm_mlm = False
 
         raw_text = args.prompt if args.prompt else input("Model prompt >>> ")
-        if args.model_type in ["transfo-xl", "xlnet"]:
-            # Models with memory likes to have a long prompt for short inputs.
-            raw_text = (args.padding_text if args.padding_text else PADDING_TEXT) + raw_text
         context_tokens = tokenizer.encode(raw_text, add_special_tokens=False)
-        if args.model_type == "ctrl":
-            if not any(context_tokens[0] == x for x in tokenizer.control_codes.values()):
-                logger.info("WARNING! You are not starting your generation from a control code so you won't get good results")
         out = sample_sequence(
             model=model,
             context=context_tokens,
